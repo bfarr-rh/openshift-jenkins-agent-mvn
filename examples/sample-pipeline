@@ -1,0 +1,37 @@
+pipeline {
+    agent { 
+        label 'ocp' 
+    }
+
+    stages {
+        stage('Build') {
+            steps {
+                sh 'oc version'
+                // Get some code from a GitHub repository
+                git 'https://github.com/bfarr-rh/hello-world-java-docker'
+
+                // Run the build on a Unix agent. You must have Maven installed.
+                sh 'mvn clean package'
+            }
+
+            post {
+                // If Maven was able to run the tests, even if some of the test
+                // failed, record the test results and archive the jar file.
+                success {
+                    archiveArtifacts 'target/*.jar'
+                }
+            }
+        }
+         stage('Deploy') {
+            steps {
+              sh 'oc delete bc/java-app'
+              
+              sh 'oc new-build --strategy=docker --binary=true --name=java-app'
+              
+              sh 'oc start-build java-app --from-dir=. --follow'
+              
+              sh 'oc new-app java-app'
+            }
+         }
+    }
+}
