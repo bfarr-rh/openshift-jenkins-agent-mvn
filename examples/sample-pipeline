@@ -24,11 +24,13 @@ pipeline {
         }
          stage('Deploy') {
             steps {
-              sh 'oc delete bc/java-app'
+              sh 'oc delete bc/java-app --wait=true --ignore-not-found'
               
               sh 'oc new-build --strategy=docker --binary=true --name=java-app'
               
               sh 'oc start-build java-app --from-dir=. --follow'
+              
+              sh 'oc delete all -l app=java-app --wait=true --ignore-not-found'
               
               sh 'oc new-app java-app'
             }
